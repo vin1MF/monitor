@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
             npm ci
@@ -34,6 +38,15 @@ jobs:
           else
             echo "Sem script de teste. Pulando etapa."
           fi
+
+      # Opcional: linters
+      # - name: Lint
+      #   run: |
+      #     if npm run | grep -q " lint"; then
+      #       npm run lint
+      #     else
+      #       echo "Sem script lint. Pulando."
+      #     fi
 
       - name: Set image tags
         id: vars
@@ -53,12 +66,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & Push
+      - name: Build & Push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./dockerfile
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ steps.vars.outputs.IMAGE }}:latest
             ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG_SHA }}
+          cache-from: type=registry,ref=${{ steps.vars.outputs.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ steps.vars.outputs.IMAGE }}:buildcache,mode=max
