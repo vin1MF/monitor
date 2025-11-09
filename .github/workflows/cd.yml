@@ -21,8 +21,9 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Setando KUBECONFIG para Minikube no Windows"
-          $env:KUBECONFIG="C:\Users\W10\.minikube\config\config.json"
-          kubectl version
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          kubectl config current-context
+          kubectl get nodes
 
       - name: Set image vars
         id: vars
