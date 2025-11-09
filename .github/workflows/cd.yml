@@ -11,19 +11,17 @@ permissions:
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    env:
-      KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure kubectl
+      - name: Set KUBECONFIG
         run: |
-          mkdir -p $HOME/.kube
-          echo "$KUBE_CONFIG_DATA" | base64 --decode > $HOME/.kube/config
-          kubectl get nodes
+          echo "Setando KUBECONFIG para Minikube no Windows"
+          $env:KUBECONFIG="C:\Users\W10\.minikube\config\config.json"
+          kubectl version
 
       - name: Set image vars
         id: vars
