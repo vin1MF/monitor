@@ -12,28 +12,27 @@ jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    environment: production
+    env:
+      KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set vars
-        id: vars
-        run: |
-          echo "IMAGE=vinimf14/monitor" >> $GITHUB_OUTPUT
-          echo "TAG_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "NAMESPACE=${{ secrets.K8S_NAMESPACE || 'default' }}" >> $GITHUB_OUTPUT
-
-      - name: Setup kubeconfig
+      - name: Configure kubectl
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+          echo "$KUBE_CONFIG_DATA" | base64 --decode > $HOME/.kube/config
+          kubectl get nodes
 
-      - name: Verify cluster access
-        run: kubectl get nodes
-
-      - name: Deploy new image
+      - name: Set image vars
+        id: vars
         run: |
-          kubectl set image deployment/monitor monitor=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG_SHA }} -n ${{ steps.vars.outputs.NAMESPACE }}
-          kubectl rollout status deployment/monitor -n ${{ steps.vars.outputs.NAMESPACE }}
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "IMAGE=vinimf14/monitor" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/monitor monitor=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG_SHA }} -n default
+          kubectl rollout status deployment/monitor -n default
