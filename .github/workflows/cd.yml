@@ -18,19 +18,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set KUBECONFIG
+        shell: powershell
         run: |
-          echo "Setando KUBECONFIG para Minikube no Windows"
+          Write-Host "Setando KUBECONFIG para Minikube no Windows"
           $env:KUBECONFIG="C:\Users\W10\.minikube\config\config.json"
           kubectl version
 
       - name: Set image vars
         id: vars
+        shell: powershell
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "IMAGE=vinimf14/monitor" >> $GITHUB_OUTPUT
-          echo "TAG_SHA=$SHORT_SHA" >> $GITHUB_OUTPUT
+          $SHORT_SHA = $env:GITHUB_SHA.Substring(0,7)
+          Write-Output "IMAGE=vinimf14/monitor" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Output "TAG_SHA=$SHORT_SHA" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Deploy to Kubernetes
+        shell: powershell
         run: |
+          Write-Host "Atualizando deployment monitor com a nova imagem"
           kubectl set image deployment/monitor monitor=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG_SHA }} -n default
           kubectl rollout status deployment/monitor -n default
