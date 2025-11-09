@@ -24,6 +24,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
+        working-directory: ./app
         run: |
           if [ -f package-lock.json ]; then
             npm ci
@@ -32,21 +33,13 @@ jobs:
           fi
 
       - name: Run tests (se tiver)
+        working-directory: ./app
         run: |
           if npm run | grep -q " test"; then
             npm test
           else
             echo "Sem script de teste. Pulando etapa."
           fi
-
-      # Opcional: linters
-      # - name: Lint
-      #   run: |
-      #     if npm run | grep -q " lint"; then
-      #       npm run lint
-      #     else
-      #       echo "Sem script lint. Pulando."
-      #     fi
 
       - name: Set image tags
         id: vars
@@ -69,8 +62,8 @@ jobs:
       - name: Build & Push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./app
+          file: ./app/Dockerfile
           push: true
           tags: |
             ${{ steps.vars.outputs.IMAGE }}:latest
